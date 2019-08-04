@@ -3,6 +3,7 @@ import * as PIXI from "pixi.js";
 import tcolor from "tinycolor2";
 import { parseScientific, arcToBezier, parseTransform } from "./utils";
 
+const EPS = 0.001;
 /**
  * @typedef {Object} DefaultOptions
  * @property {number} [lineWidth] default stroke thickness (must be greater or equal of 1)
@@ -274,6 +275,11 @@ export default class SVG extends PIXI.Graphics {
 		const y1 = parseFloat(node.getAttribute("y1"));
 		const x2 = parseFloat(node.getAttribute("x2"));
 		const y2 = parseFloat(node.getAttribute("y2"));
+
+		//idiot chek
+		if(Math.abs(x1 - x2 + y1 - y2) <= EPS)
+			return;
+
 		this.moveTo(x1, y1);
 		this.lineTo(x2, y2);
 	}
@@ -491,11 +497,21 @@ export default class SVG extends PIXI.Graphics {
 					break;
 				}
 				case "L": {
-					this.lineTo((x = command.end.x), (y = command.end.y));
+					const { x : nx, y : ny } = command.end;
+					
+					//idiot chek
+					if(Math.abs(x - nx + y - ny) <= EPS)
+						break;
+
+					this.lineTo((x = nx), (y = ny));
 					break;
 				}
 				case "l": {
-					this.lineTo((x += command.end.x), (y += command.end.y));
+					
+					const { x : dx, y : dy } = command.end;
+					if(Math.abs(dx + dy) <= EPS)
+						break;
+					this.lineTo((x += dx), (y += dy));
 					break;
 				}
 				//short C, selet cp1 from last command
