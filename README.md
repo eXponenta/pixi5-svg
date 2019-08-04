@@ -64,13 +64,13 @@ const svg = new Svg(svgText, options);
 
 ```
 
-Example : eXponenta/pixi5-svg-examples
+Examples : https://github.com/eXponenta/pixi5-svg-examples
 
 Preview : https://exponenta.github.io/pixi5-svg-examples/
 
 
 ### Alternatives
 
-bigtimebuddy/pixi-svg
+https://github.com/bigtimebuddy/pixi-svg
 
-saschagehlich/pixi-svg-graphics
+https://github.com/saschagehlich/pixi-svg-graphics
