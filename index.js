@@ -33,7 +33,7 @@ export default class SVG extends PIXI.Graphics {
 	 * @param {SVGElement | string} svg
 	 * @param {DefaultOptions} options
 	 */
-	constructor(svg, options = DEFAULT) {
+	constructor(svg, options = DEFAULT, impotent = false) {
 		super();
 		this.options = Object.assign({}, DEFAULT, options || {});
 
@@ -48,8 +48,11 @@ export default class SVG extends PIXI.Graphics {
 			}
 		}
 
-		//@ts-ignore
-		this.svgChildren(svg.children);
+		
+		if(!impotent) {
+			//@ts-ignore
+			this.svgChildren(svg.children);
+		}
 		this.type = "";
 	}
 
@@ -183,16 +186,17 @@ export default class SVG extends PIXI.Graphics {
 	svgChildren(children, parentStyle, parentMatrix) {
 		for (let i = 0; i < children.length; i++) {
 			const child = children[i];
-			const shape = this.options.unpackTree ? new SVG(child, this.options) : this;
 
 			const nodeName = child.nodeName.toLowerCase();
 			const nodeStyle = this.svgStyle(child);
 			const matrix = this.svgTransform(child);
 
+			const shape = this.options.unpackTree ? new SVG(child, this.options, true) : this;
+
 			//compile full style inherited from all parents
 			const fullStyle = Object.assign({}, parentStyle || {}, nodeStyle);
 
-			shape.fillShapes(child, fullStyle, matrix);
+			shape.fillShapes(fullStyle, matrix);
 
 			switch (nodeName) {
 				case "path": {
@@ -230,7 +234,7 @@ export default class SVG extends PIXI.Graphics {
 					break;
 				}
 			}
-
+			
 			shape.svgChildren(child.children, fullStyle, matrix);
 			if (this.options.unpackTree) {
 				shape.name = child.getAttribute("id") || "child_" + i;
@@ -399,11 +403,10 @@ export default class SVG extends PIXI.Graphics {
 	 * Set the fill and stroke style.
 	 * @private
 	 * @method SVG#fillShapes
-	 * @param {SVGElement} node
 	 * @param {*} style
 	 * @param {PIXI.Matrix} matrix
 	 */
-	fillShapes(node, style, matrix) {
+	fillShapes(style, matrix) {
 		const { fill, opacity, stroke, strokeWidth, strokeOpacity, fillOpacity } = style;
 
 		const isStrokable = (stroke !== undefined && stroke !== "none" && stroke !=="transparent");
@@ -435,18 +438,6 @@ export default class SVG extends PIXI.Graphics {
 
 		this.lineStyle(lineWidth, lineColor, strokeOpacityValue);
 		this.setMatrix(matrix);
-
-		// @if DEBUG
-		if (node.getAttribute("stroke-linejoin")) {
-			console.info('[SVGUtils] "stroke-linejoin" attribute is not supported');
-		}
-		if (node.getAttribute("stroke-linecap")) {
-			console.info('[SVGUtils] "stroke-linecap" attribute is not supported');
-		}
-		if (node.getAttribute("fill-rule")) {
-			console.info('[SVGUtils] "fill-rule" attribute is not supported');
-		}
-		// @endif
 	}
 
 	/**
@@ -498,7 +489,7 @@ export default class SVG extends PIXI.Graphics {
 				}
 				case "L": {
 					const { x : nx, y : ny } = command.end;
-					
+
 					//idiot chek
 					if(Math.abs(x - nx + y - ny) <= EPS)
 						break;
