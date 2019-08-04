@@ -1,0 +1,21 @@
+{
+  "name": "pixi5-svg",
+  "version": "0.1.1",
+  "description": "SVG support for PixiV5. Generate Graphics from SVG. Supported version => 5.1.1.",
+  "module": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "pixi",
+    "svg",
+    "pixiv5"
+  ],
+  "author": "eXponenta",
+  "license": "MIT",
+  "dependencies": {
+    "d-path-parser": "^1.0.0",
+    "pixi.js": "^5.1.1",
+    "tinycolor2": "^1.4.1"
+  }
+}
