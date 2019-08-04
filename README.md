@@ -5,6 +5,9 @@ This is hybrid of [pixi-svg](https://github.com/bigtimebuddy/pixi-svg), [pixi-sv
     
 Pixi v5.1.1 or greater
 
+## Preview
+Test it in [LIVE](https://github.com/eXponenta/pixi5-svg-examples/live.html)
+
 ### Supported Features
 
 Only supports a subset of SVG's feature. Current this includes:
@@ -66,7 +69,8 @@ const svg = new Svg(svgText, options);
 
 Examples : https://github.com/eXponenta/pixi5-svg-examples
 
-Preview : https://exponenta.github.io/pixi5-svg-examples/
+Demo: https://exponenta.github.io/pixi5-svg-examples/
+Live: https://exponenta.github.io/pixi5-svg-examples/live.html
 
 
 ### Alternatives
