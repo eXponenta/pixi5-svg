@@ -10,17 +10,16 @@ Pixi v5.1.1 or greater
 Only supports a subset of SVG's feature. Current this includes:
 
 SVG Elements:
-* \<path>
-
-    * Mm, Ll, Hh, Vv, Ss, Cc, Tt, Qq, Zz - fully
-    * Aa - partial, large sweep flag is ignored. ARC transforms to multiple bezier curves
-* \<circle>
-* \<ellipse>
-* \<rect>
-* \<line>
-* \<polygon>
-* \<polyline>
-* \<g>
+* `path`
+    * M, L, H, V, S, C, T, Q, Z - fully
+    * A - partial, large sweep flag is ignored. ARC transforms to multiple bezier curves
+* `circle`
+* `ellipse`
+* `rect`
+* `line`
+* `polygon`
+* `polyline`
+* `g`
 
 Style attributes with the following properties:
 * stroke
@@ -38,9 +37,37 @@ Transforms:
 
 ## Features
 * Support all exists path commands with maximum similarity of SVG, exclude arc large sweep (you can send PR for it)
+* Style inheritance from `g`
 * Support single graphics
 * Support SVG tree unpacking (with options `unpackTree`)
 * Support node picking in single mode
+* Support `SVGElement` or raw text of svg
+
+## Problems
+* Selfcrossed shapes not supports yet in PIXI.Graphics
+* Large sweep flags not supported yet (i don't know why it isn't works)
+* Because text node cannot support on single graphics mode, it's ignores always
+* Mitter limit can't supported in PIXI yet
+
+## Usage
+
+Install `npm install pixi5-svg`
+
+Use:
+```
+import Svg from "pixi5-svg"
+
+const svgText = '.....';
+const options = {/* see DefaultOptions */}
+const svg = new Svg(svgText, options);
+
+
+```
+
+Example : eXponenta/pixi5-svg-examples
+
+Preview : https://exponenta.github.io/pixi5-svg-examples/
+
 
 ### Alternatives
 
