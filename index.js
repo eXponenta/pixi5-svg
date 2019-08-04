@@ -377,13 +377,10 @@ export default class SVG extends PIXI.Graphics {
 	 * @param {SVGPolylineElement} node
 	 */
 	svgPoly(node, close) {
-		const points = node
-			.getAttribute("points")
-			.split(/[ ,]/g)
-			.map(p => parseFloat(p));
-
+		const pointsAttr = node.getAttribute("points");
+		const pointsRaw = pointsAttr.split(/[ ,]/g);
+		const points = pointsRaw.reduce((acc, p) =>  (p && acc.push(parseFloat(p)), acc), []);
 		this.drawPolygon(points);
-
 		if (!close) {
 			//@ts-ignore
 			const gd = this.geometry.graphicsData;

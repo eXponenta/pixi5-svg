@@ -51,7 +51,7 @@ Transforms:
 * Large sweep flags not supported yet (i don't know why it isn't works)
 * Because text node cannot support on single graphics mode, it's ignores always
 * Mitter limit can't supported in PIXI yet
-
+* Bounds calculation is incorect https://github.com/pixijs/pixi.js/pull/5991
 ## Usage
 
 Install `npm install pixi5-svg`
