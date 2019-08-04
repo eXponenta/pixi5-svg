@@ -1,6 +1,6 @@
 ## PIXIv5 SVG support
 
-This is hybrid of [pixi-svg](https://github.com/bigtimebuddy/pixi-svg), [pixi-svg-graphics](https://github.com/saschagehlich/pixi-svg-graphics) and more fixes and adaptations for pxii v5
+This is hybrid of [pixi-svg](https://github.com/bigtimebuddy/pixi-svg), [pixi-svg-graphics](https://github.com/saschagehlich/pixi-svg-graphics) and more fixes and adaptations for pixi v5
 ### Version support
     
 Pixi v5.1.1 or greater
@@ -21,19 +21,19 @@ SVG Elements:
 * `polyline`
 * `g`
 
-Style attributes with the following properties:
-* stroke
-* stroke-opacity
-* stroke-width
-* fill
-* fill-opacity
-* opacity
+Style attributes with the following properties (inlcude inline styles):
+* `stroke`
+* `stroke-opacity`
+* `stroke-width`
+* `fill`
+* `fill-opacity`
+* `opacity`
 
 Transforms:
-* matrix
-* translate
-* rotate
-* scale
+* `matrix`
+* `translate`
+* `rotate`
+* `scale`
 
 ## Features
 * Support all exists path commands with maximum similarity of SVG, exclude arc large sweep (you can send PR for it)
