@@ -349,8 +349,12 @@ export default class SVG extends PIXI.Graphics {
 		};
 		if (style !== null) {
 			style.split(";").forEach(prop => {
-				const [name, value] = prop.split(":");
-				result[name.trim()] = value.trim();
+				if(prop) {
+					const [name, value] = prop.split(":");
+					if(name && value){
+						result[name.trim()] = value.trim();
+					}
+				}
 			});
 			if (result["stroke-width"]) {
 				result.strokeWidth = result["stroke-width"];
@@ -399,18 +403,25 @@ export default class SVG extends PIXI.Graphics {
 	fillShapes(node, style, matrix) {
 		const { fill, opacity, stroke, strokeWidth, strokeOpacity, fillOpacity } = style;
 
-		const defaultLineWidth = stroke !== undefined ? this.options.lineWidth || 1 : 0;
+		const isStrokable = (stroke !== undefined && stroke !== "none" && stroke !=="transparent");
+		const isFillable = (fill !== undefined && fill !== "none" && fill !== "transparent");
+
+		const defaultLineWidth = isStrokable ? this.options.lineWidth || 1 : 0;
 		const lineWidth = strokeWidth !== undefined ? Math.max(0.5, parseFloat(strokeWidth)) : defaultLineWidth;
-		const lineColor = stroke !== undefined ? this.hexToUint(stroke) : this.options.lineColor;
+		const lineColor = isStrokable ? this.hexToUint(stroke) : this.options.lineColor;
 
-		const strokeOpacityValue =
-			opacity !== undefined ? parseFloat(opacity) : strokeOpacity !== undefined ? parseFloat(strokeOpacity) : 1;
+		let strokeOpacityValue = 0;
+		let fillOpacityValue = 0;
 
-		const fillOpacityValue =
-			opacity !== undefined ? parseFloat(opacity) : fillOpacity !== undefined ? parseFloat(fillOpacity) : 1;
+		if(isStrokable){
+			strokeOpacityValue = (opacity || strokeOpacity) ?  parseFloat(opacity || strokeOpacity) : this.options.lineOpacity;
+		}
+		if(isFillable) {
+			fillOpacityValue = (opacity || fillOpacity)  ? parseFloat(opacity || fillOpacity) : this.options.fillOpacity;
+		}
 
 		if (fill) {
-			if (fill === "none" || fill === "transparent") {
+			if (!isFillable) {
 				this.beginFill(0, 0);
 			} else {
 				this.beginFill(this.hexToUint(fill), fillOpacityValue);
