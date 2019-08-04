@@ -1,6 +1,10 @@
 {
   "name": "pixi5-svg",
   "version": "0.1.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/eXponenta/pixi5-svg.git"
+  },
   "description": "SVG support for PixiV5. Generate Graphics from SVG. Supported version => 5.1.1.",
   "module": "index.js",
   "scripts": {
