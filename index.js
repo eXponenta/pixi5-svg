@@ -195,9 +195,12 @@ export default class SVG extends PIXI.Graphics {
 
 			switch (nodeName) {
 				case "path": {
-					//console.log(child.getAttribute("id"), {...fullStyle});
 					shape.svgPath(child);
 					break;
+				}
+				case "line": {
+					this.svgLine(child);
+					break;	
 				}
 				case "circle":
 				case "ellipse": {
@@ -261,9 +264,24 @@ export default class SVG extends PIXI.Graphics {
 	}
 
 	/**
+	 * Render a <line> element 
+	 * @private
+	 * @method SVG#svgLine
+	 * @param {SVGCircleElement} node
+	 */
+	svgLine(node) {
+		const x1 = parseFloat(node.getAttribute("x1"));
+		const y1 = parseFloat(node.getAttribute("y1"));
+		const x2 = parseFloat(node.getAttribute("x2"));
+		const y2 = parseFloat(node.getAttribute("y2"));
+		this.moveTo(x1, y1);
+		this.lineTo(x2, y2);
+	}
+
+	/**
 	 * Render a <ellipse> element or <circle> element
 	 * @private
-	 * @method SVG#internalEllipse
+	 * @method SVG#svgCircle
 	 * @param {SVGCircleElement} node
 	 */
 	svgCircle(node) {
@@ -271,8 +289,8 @@ export default class SVG extends PIXI.Graphics {
 		let widthProp = "r";
 		const isEllipse = node.nodeName === "ellipse";
 		if (isEllipse) {
-			heightProp += "x";
-			widthProp += "y";
+			heightProp += "y";
+			widthProp += "x";
 		}
 		const width = parseFloat(node.getAttribute(widthProp));
 		const height = parseFloat(node.getAttribute(heightProp));
@@ -362,8 +380,11 @@ export default class SVG extends PIXI.Graphics {
 
 		this.drawPolygon(points);
 
-		if (close) {
-			this.closePath();
+		if (!close) {
+			//@ts-ignore
+			const gd = this.geometry.graphicsData;
+			//@ts-ignore
+			gd[gd.length - 1].shape.closeStroke = false;
 		}
 	}
 
@@ -423,6 +444,7 @@ export default class SVG extends PIXI.Graphics {
 		const d = node.getAttribute("d");
 		let x = 0,
 			y = 0;
+		
 		const commands = dPathParse(d);
 		let prevCommand = undefined;
 
