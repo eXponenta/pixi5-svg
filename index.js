@@ -3,7 +3,7 @@ import * as PIXI from "pixi.js";
 import tcolor from "tinycolor2";
 import { parseScientific, arcToBezier, parseTransform } from "./utils";
 
-const EPS = 0.001;
+const EPS = 0.0001;
 /**
  * @typedef {Object} DefaultOptions
  * @property {number} [lineWidth] default stroke thickness (must be greater or equal of 1)
@@ -25,35 +25,19 @@ const DEFAULT = {
 	lineWidth: 1
 };
 
-export default class SVG extends PIXI.Graphics {
+export class SVGNode extends PIXI.Graphics {
 	/**
-	 * Create Graphics from svg
+	 * Create Graphics from svg subnode
 	 * @class
 	 * @public
-	 * @param {SVGElement | string} svg
+	 * @param {SVGElement} svg
 	 * @param {DefaultOptions} options
 	 */
-	constructor(svg, options = DEFAULT, impotent = false) {
+	constructor(svg, options) {
 		super();
-		this.options = Object.assign({}, DEFAULT, options || {});
-
-		if (!(svg instanceof SVGElement)) {
-			const container = document.createElement("div");
-			container.innerHTML = svg;
-
-			//@ts-ignore
-			svg = container.children[0];
-			if (!(svg instanceof SVGElement)) {
-				throw new Error("invalid SVG!");
-			}
-		}
-
-		
-		if(!impotent) {
-			//@ts-ignore
-			this.svgChildren(svg.children);
-		}
-		this.type = "";
+		this.options = options;
+		this.dataNode = svg;
+		this.type = svg.nodeName.toLowerCase();
 	}
 
 	/**
@@ -187,11 +171,10 @@ export default class SVG extends PIXI.Graphics {
 		for (let i = 0; i < children.length; i++) {
 			const child = children[i];
 
-			const nodeName = child.nodeName.toLowerCase();
 			const nodeStyle = this.svgStyle(child);
 			const matrix = this.svgTransform(child);
-
-			const shape = this.options.unpackTree ? new SVG(child, this.options, true) : this;
+			const nodeName = child.nodeName.toLowerCase();
+			const shape = this.options.unpackTree ? new SVGNode(child, this.options) : this;
 
 			//compile full style inherited from all parents
 			const fullStyle = Object.assign({}, parentStyle || {}, nodeStyle);
@@ -234,11 +217,10 @@ export default class SVG extends PIXI.Graphics {
 					break;
 				}
 			}
-			
+
 			shape.svgChildren(child.children, fullStyle, matrix);
 			if (this.options.unpackTree) {
 				shape.name = child.getAttribute("id") || "child_" + i;
-				shape.type = nodeName;
 				this.addChild(shape);
 			}
 		}
@@ -281,7 +263,7 @@ export default class SVG extends PIXI.Graphics {
 		const y2 = parseFloat(node.getAttribute("y2"));
 
 		//idiot chek
-		if(Math.abs(x1 - x2 + y1 - y2) <= EPS)
+		if(Math.abs(x1 - x2) + Math.abs(y1 - y2) <= EPS)
 			return;
 
 		this.moveTo(x1, y1);
@@ -490,18 +472,18 @@ export default class SVG extends PIXI.Graphics {
 				case "L": {
 					const { x : nx, y : ny } = command.end;
 
-					//idiot chek
-					if(Math.abs(x - nx + y - ny) <= EPS)
+					if(Math.abs(x - nx) + Math.abs (y - ny) <= EPS)
 						break;
 
 					this.lineTo((x = nx), (y = ny));
 					break;
 				}
 				case "l": {
-					
 					const { x : dx, y : dy } = command.end;
-					if(Math.abs(dx + dy) <= EPS)
+					
+					if(Math.abs(dx) + Math.abs(dy) <= EPS)
 						break;
+
 					this.lineTo((x += dx), (y += dy));
 					break;
 				}
@@ -668,3 +650,31 @@ export default class SVG extends PIXI.Graphics {
 		}
 	}
 }
+
+export default class SVG extends SVGNode {
+	/**
+	 * Create Graphics from svg
+	 * @class
+	 * @public
+	 * @param {SVGElement | string} svg
+	 * @param {DefaultOptions} options
+	 */
+	constructor(svg, options = DEFAULT) {
+		if (!(svg instanceof SVGElement)) {
+			const container = document.createElement("div");
+			container.innerHTML = svg;
+
+			//@ts-ignore
+			svg = container.children[0];
+			if (!(svg instanceof SVGElement)) {
+				throw new Error("invalid SVG!");
+			}
+		}
+		
+		super(svg, Object.assign({}, DEFAULT, options || {}));
+
+		//@ts-ignore
+		this.svgChildren(svg.children);
+		this.type = "svg";
+	}
+} 
