@@ -466,6 +466,8 @@ export class SVGNode extends PIXI.Graphics {
 				case "Z":
 				case "z": {
 					//jump corete to end
+					x = this.currentPath.points[0]
+					y = this.currentPath.points[1];
 					this.closePath();
 					break;
 				}
