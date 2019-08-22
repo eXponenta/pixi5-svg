@@ -25,6 +25,128 @@ const DEFAULT = {
 	lineWidth: 1
 };
 
+/**
+ * Get the style property and parse options.
+ * @param {SVGElement} node
+ * @return {Object} Style attributes
+ */
+function parseSvgStyle(node) {
+	const style = node.getAttribute("style");
+	const result = {
+		fill: node.getAttribute("fill"),
+		opacity: node.getAttribute("opacity"),
+		fillOpacity: node.getAttribute("fill-opacity"),
+		stroke: node.getAttribute("stroke"),
+		strokeOpacity: node.getAttribute("stroke-opacity"),
+		strokeWidth: node.getAttribute("stroke-width")
+	};
+	if (style !== null) {
+		style.split(";").forEach(prop => {
+			if (prop) {
+				const [name, value] = prop.split(":");
+				if (name && value) {
+					result[name.trim()] = value.trim();
+				}
+			}
+		});
+		if (result["stroke-width"]) {
+			result.strokeWidth = result["stroke-width"];
+			delete result["stroke-width"];
+		}
+	}
+
+	for (let key in result) {
+		if (result[key] === null) {
+			delete result[key];
+		}
+	}
+	return result;
+}
+
+/**
+ * Parse transform attribute
+ * @param {SVGElement} node
+ */
+function parseSvgTransform(node) {
+	if (!node.getAttribute("transform")) {
+		return undefined;
+	}
+
+	const matrix = new PIXI.Matrix();
+	const transformAttr = node.getAttribute("transform");
+	const commands = parseTransform(transformAttr);
+
+	//apply transform matrix right to left
+	for (let key = commands.length - 1; key >= 0; --key) {
+		let command = commands[key].command;
+		let values = commands[key].params;
+
+		switch (command) {
+			case "matrix": {
+				matrix.a = parseScientific(values[0]);
+				matrix.b = parseScientific(values[1]);
+				matrix.c = parseScientific(values[2]);
+				matrix.d = parseScientific(values[3]);
+				matrix.tx = parseScientific(values[4]);
+				matrix.ty = parseScientific(values[5]);
+
+				return matrix;
+			}
+			case "translate": {
+				const dx = parseScientific(values[0]);
+				const dy = parseScientific(values[1]) || 0;
+				matrix.translate(dx, dy);
+				break;
+			}
+			case "scale": {
+				const sx = parseScientific(values[0]);
+				const sy = values.length > 1 ? parseScientific(values[1]) : sx;
+				matrix.scale(sx, sy);
+				break;
+			}
+			case "rotate": {
+				let dx = 0;
+				let dy = 0;
+
+				if (values.length > 1) {
+					dx = parseScientific(values[1]);
+					dy = parseScientific(values[2]);
+				}
+
+				matrix
+					.translate(-dx, -dy)
+					.rotate((parseScientific(values[0]) * Math.PI) / 180)
+					.translate(dx, dy);
+
+				break;
+			}
+			default: {
+				console.log(`Command ${command} can't implement yet`);
+			}
+		}
+	}
+
+	return matrix;
+}
+
+export class SVGGroup extends PIXI.Container {
+	/**
+	 * Create Container from svg subnode of 'g'
+	 * @class
+	 * @public
+	 * @param {SVGElement} svg
+	 */
+	constructor(svg, options) {
+		super();
+		this.options = options;
+		this.dataNode = svg;
+		this.type = svg.nodeName.toLowerCase();
+		this.name = svg.getAttribute("id") || "";
+	}
+
+	fillShapes(style, matrix) {}
+}
+
 export class SVGNode extends PIXI.Graphics {
 	/**
 	 * Create Graphics from svg subnode
@@ -94,101 +216,44 @@ export class SVGNode extends PIXI.Graphics {
 	}
 
 	/**
-	 * Parse transform attribute
-	 * @private
-	 * @method SVG#parseTransform
-	 * @param {SVGElement} node
-	 */
-	svgTransform(node) {
-		if (!node.getAttribute("transform")) return undefined;
-
-		const matrix = new PIXI.Matrix();
-		const transformAttr = node.getAttribute("transform");
-		const commands = parseTransform(transformAttr);
-
-		//apply transform matrix right to left
-		for (let key = commands.length - 1; key >= 0; --key) {
-			let command = commands[key].command;
-			let values = commands[key].params;
-
-			switch (command) {
-				case "matrix": {
-					matrix.a = parseScientific(values[0]);
-					matrix.b = parseScientific(values[1]);
-					matrix.c = parseScientific(values[2]);
-					matrix.d = parseScientific(values[3]);
-					matrix.tx = parseScientific(values[4]);
-					matrix.ty = parseScientific(values[5]);
-
-					return matrix;
-				}
-				case "translate": {
-					const dx = parseScientific(values[0]);
-					const dy = parseScientific(values[1]) || 0;
-					matrix.translate(dx, dy);
-					break;
-				}
-				case "scale": {
-					const sx = parseScientific(values[0]);
-					const sy = values.length > 1 ? parseScientific(values[1]) : sx;
-					matrix.scale(sx, sy);
-					break;
-				}
-				case "rotate": {
-					let dx = 0;
-					let dy = 0;
-
-					if (values.length > 1) {
-						dx = parseScientific(values[1]);
-						dy = parseScientific(values[2]);
-					}
-
-					matrix
-						.translate(-dx, -dy)
-						.rotate((parseScientific(values[0]) * Math.PI) / 180)
-						.translate(dx, dy);
-
-					break;
-				}
-				default: {
-					console.log(`Command ${command} can't implement yet`);
-				}
-			}
-		}
-
-		return matrix;
-	}
-
-	/**
-	 * Create a PIXI Graphic from SVG element
+	 * Create a PIXI Graphic from SVG elements
 	 * @private
 	 * @method SVG#svgChildren
 	 * @param {Array<*>} children - Collection of SVG nodes
 	 * @param {*} [parentStyle=undefined] Whether to inherit fill settings.
 	 * @param {PIXI.Matrix} [parentMatrix=undefined] Matrix fro transformations
 	 */
-	svgChildren(children, parentStyle, parentMatrix) {
+	parseChildren(children, parentStyle, parentMatrix) {
 		for (let i = 0; i < children.length; i++) {
 			const child = children[i];
 
-			const nodeStyle = this.svgStyle(child);
-			const matrix = this.svgTransform(child);
-			const nodeName = child.nodeName.toLowerCase();
-			const shape = this.options.unpackTree ? new SVGNode(child, this.options) : this;
+			const nodeStyle = parseSvgStyle(child);
+			const matrix = parseSvgTransform(child);
+			const nodeType = child.nodeName.toLowerCase();
+
+			/**
+			 * @type {SVG | SVGNode}
+			 */
+			let shape = this;
+
+			if (this.options.unpackTree) {
+				//@ts-ignore
+				shape = nodeType === "g" ? new SVGGroup(child, this.options) : new SVGNode(child, this.options);
+			}
 
 			//compile full style inherited from all parents
 			const fullStyle = Object.assign({}, parentStyle || {}, nodeStyle);
 
 			shape.fillShapes(fullStyle, matrix);
 
-			switch (nodeName) {
+			switch (nodeType) {
 				case "path": {
 					shape.svgPath(child);
 					break;
 				}
 				case "line": {
 					this.svgLine(child);
-					break;	
+					break;
 				}
 				case "circle":
 				case "ellipse": {
@@ -218,7 +283,7 @@ export class SVGNode extends PIXI.Graphics {
 				}
 			}
 
-			shape.svgChildren(child.children, fullStyle, matrix);
+			shape.parseChildren(child.children, fullStyle, matrix);
 			if (this.options.unpackTree) {
 				shape.name = child.getAttribute("id") || "child_" + i;
 				this.addChild(shape);
@@ -251,7 +316,7 @@ export class SVGNode extends PIXI.Graphics {
 	}
 
 	/**
-	 * Render a <line> element 
+	 * Render a <line> element
 	 * @private
 	 * @method SVG#svgLine
 	 * @param {SVGCircleElement} node
@@ -263,8 +328,7 @@ export class SVGNode extends PIXI.Graphics {
 		const y2 = parseFloat(node.getAttribute("y2"));
 
 		//idiot chek
-		if(Math.abs(x1 - x2) + Math.abs(y1 - y2) <= EPS)
-			return;
+		if (Math.abs(x1 - x2) + Math.abs(y1 - y2) <= EPS) return;
 
 		this.moveTo(x1, y1);
 		this.lineTo(x2, y2);
@@ -323,46 +387,6 @@ export class SVGNode extends PIXI.Graphics {
 	}
 
 	/**
-	 * Get the style property and parse options.
-	 * @private
-	 * @method SVG#svgStyle
-	 * @param {SVGElement} node
-	 * @return {Object} Style attributes
-	 */
-	svgStyle(node) {
-		const style = node.getAttribute("style");
-		const result = {
-			fill: node.getAttribute("fill"),
-			opacity: node.getAttribute("opacity"),
-			fillOpacity: node.getAttribute("fill-opacity"),
-			stroke: node.getAttribute("stroke"),
-			strokeOpacity: node.getAttribute("stroke-opacity"),
-			strokeWidth: node.getAttribute("stroke-width")
-		};
-		if (style !== null) {
-			style.split(";").forEach(prop => {
-				if(prop) {
-					const [name, value] = prop.split(":");
-					if(name && value){
-						result[name.trim()] = value.trim();
-					}
-				}
-			});
-			if (result["stroke-width"]) {
-				result.strokeWidth = result["stroke-width"];
-				delete result["stroke-width"];
-			}
-		}
-
-		for (let key in result) {
-			if (result[key] === null) {
-				delete result[key];
-			}
-		}
-		return result;
-	}
-
-	/**
 	 * Render a polyline element.
 	 * @private
 	 * @method SVG#svgPoly
@@ -371,7 +395,7 @@ export class SVGNode extends PIXI.Graphics {
 	svgPoly(node, close) {
 		const pointsAttr = node.getAttribute("points");
 		const pointsRaw = pointsAttr.split(/[ ,]/g);
-		const points = pointsRaw.reduce((acc, p) =>  (p && acc.push(parseFloat(p)), acc), []);
+		const points = pointsRaw.reduce((acc, p) => (p && acc.push(parseFloat(p)), acc), []);
 		this.drawPolygon(points);
 		if (!close) {
 			//@ts-ignore
@@ -391,8 +415,8 @@ export class SVGNode extends PIXI.Graphics {
 	fillShapes(style, matrix) {
 		const { fill, opacity, stroke, strokeWidth, strokeOpacity, fillOpacity } = style;
 
-		const isStrokable = (stroke !== undefined && stroke !== "none" && stroke !=="transparent");
-		const isFillable = (fill !== undefined && fill !== "none" && fill !== "transparent");
+		const isStrokable = stroke !== undefined && stroke !== "none" && stroke !== "transparent";
+		const isFillable = fill !== undefined && fill !== "none" && fill !== "transparent";
 
 		const defaultLineWidth = isStrokable ? this.options.lineWidth || 1 : 0;
 		const lineWidth = strokeWidth !== undefined ? Math.max(0.5, parseFloat(strokeWidth)) : defaultLineWidth;
@@ -401,11 +425,12 @@ export class SVGNode extends PIXI.Graphics {
 		let strokeOpacityValue = 0;
 		let fillOpacityValue = 0;
 
-		if(isStrokable){
-			strokeOpacityValue = (opacity || strokeOpacity) ?  parseFloat(opacity || strokeOpacity) : this.options.lineOpacity;
+		if (isStrokable) {
+			strokeOpacityValue =
+				opacity || strokeOpacity ? parseFloat(opacity || strokeOpacity) : this.options.lineOpacity;
 		}
-		if(isFillable) {
-			fillOpacityValue = (opacity || fillOpacity)  ? parseFloat(opacity || fillOpacity) : this.options.fillOpacity;
+		if (isFillable) {
+			fillOpacityValue = opacity || fillOpacity ? parseFloat(opacity || fillOpacity) : this.options.fillOpacity;
 		}
 
 		if (fill) {
@@ -431,7 +456,7 @@ export class SVGNode extends PIXI.Graphics {
 		const d = node.getAttribute("d");
 		let x = 0,
 			y = 0;
-		
+
 		const commands = dPathParse(d);
 		let prevCommand = undefined;
 
@@ -465,26 +490,24 @@ export class SVGNode extends PIXI.Graphics {
 				}
 				case "Z":
 				case "z": {
-					//jump corete to end
-					x = this.currentPath.points[0]
-					y = this.currentPath.points[1];
 					this.closePath();
+					//jump corete to end
+					x = this.currentPath.points[0];
+					y = this.currentPath.points[1];
 					break;
 				}
 				case "L": {
-					const { x : nx, y : ny } = command.end;
+					const { x: nx, y: ny } = command.end;
 
-					if(Math.abs(x - nx) + Math.abs (y - ny) <= EPS)
-						break;
+					if (Math.abs(x - nx) + Math.abs(y - ny) <= EPS) break;
 
 					this.lineTo((x = nx), (y = ny));
 					break;
 				}
 				case "l": {
-					const { x : dx, y : dy } = command.end;
-					
-					if(Math.abs(dx) + Math.abs(dy) <= EPS)
-						break;
+					const { x: dx, y: dy } = command.end;
+
+					if (Math.abs(dx) + Math.abs(dy) <= EPS) break;
 
 					this.lineTo((x += dx), (y += dy));
 					break;
@@ -653,6 +676,9 @@ export class SVGNode extends PIXI.Graphics {
 	}
 }
 
+//faster, better, longer!!
+SVGGroup.prototype.parseChildren = SVGNode.prototype.parseChildren;
+
 export default class SVG extends SVGNode {
 	/**
 	 * Create Graphics from svg
@@ -672,11 +698,11 @@ export default class SVG extends SVGNode {
 				throw new Error("invalid SVG!");
 			}
 		}
-		
+
 		super(svg, Object.assign({}, DEFAULT, options || {}));
 
 		//@ts-ignore
-		this.svgChildren(svg.children);
+		this.parseChildren(svg.children);
 		this.type = "svg";
 	}
-} 
+}
