@@ -456,7 +456,8 @@ export class SVGNode extends PIXI.Graphics {
 		const d = node.getAttribute("d");
 		let x = 0,
 			y = 0;
-
+		let iX = 0,
+			iY = 0;
 		const commands = dPathParse(d);
 		let prevCommand = undefined;
 
@@ -466,10 +467,12 @@ export class SVGNode extends PIXI.Graphics {
 			switch (command.code) {
 				case "m": {
 					this.moveTo((x += command.end.x), (y += command.end.y));
+					iX = x, iY = y;
 					break;
 				}
 				case "M": {
 					this.moveTo((x = command.end.x), (y = command.end.y));
+					iX = x, iY = y;
 					break;
 				}
 				case "H": {
@@ -490,16 +493,18 @@ export class SVGNode extends PIXI.Graphics {
 				}
 				case "Z":
 				case "z": {
+					//jump corete to first point
+					x = iX, y = iY;
 					this.closePath();
-					//jump corete to end
-					x = this.currentPath.points[0];
-					y = this.currentPath.points[1];
 					break;
 				}
 				case "L": {
 					const { x: nx, y: ny } = command.end;
 
-					if (Math.abs(x - nx) + Math.abs(y - ny) <= EPS) break;
+					if (Math.abs(x - nx) + Math.abs(y - ny) <= EPS){
+						x = nx, y = ny;
+						break;
+					}
 
 					this.lineTo((x = nx), (y = ny));
 					break;
@@ -507,7 +512,10 @@ export class SVGNode extends PIXI.Graphics {
 				case "l": {
 					const { x: dx, y: dy } = command.end;
 
-					if (Math.abs(dx) + Math.abs(dy) <= EPS) break;
+					if (Math.abs(dx) + Math.abs(dy) <= EPS) {
+						x += dx, y += dy;
+						break;
+					}
 
 					this.lineTo((x += dx), (y += dy));
 					break;
