@@ -1,7 +1,6 @@
-import dPathParse from "d-path-parser";
-import * as PIXI from "pixi.js";
 import tcolor from "tinycolor2";
-import { parseScientific, arcToBezier, parseTransform } from "./utils";
+import { parseScientific, parseTransform } from "./utils";
+import { GraphicsNode } from "./GraphicsNode";
 
 const EPS = 0.0001;
 /**
@@ -72,7 +71,7 @@ function parseSvgTransform(node) {
 		return undefined;
 	}
 
-	const matrix = new PIXI.Matrix();
+	const matrix = new DOMMatrix();
 	const transformAttr = node.getAttribute("transform");
 	const commands = parseTransform(transformAttr);
 
@@ -87,8 +86,8 @@ function parseSvgTransform(node) {
 				matrix.b = parseScientific(values[1]);
 				matrix.c = parseScientific(values[2]);
 				matrix.d = parseScientific(values[3]);
-				matrix.tx = parseScientific(values[4]);
-				matrix.ty = parseScientific(values[5]);
+				matrix.e = parseScientific(values[4]);
+				matrix.f = parseScientific(values[5]);
 
 				return matrix;
 			}
@@ -129,7 +128,7 @@ function parseSvgTransform(node) {
 	return matrix;
 }
 
-export class SVGGroup extends PIXI.Container {
+export class SVGGroup {
 	/**
 	 * Create Container from svg subnode of 'g'
 	 * @class
@@ -137,7 +136,6 @@ export class SVGGroup extends PIXI.Container {
 	 * @param {SVGElement} svg
 	 */
 	constructor(svg, options) {
-		super();
 		this.options = options;
 		this.dataNode = svg;
 		this.type = svg.nodeName.toLowerCase();
@@ -147,7 +145,7 @@ export class SVGGroup extends PIXI.Container {
 	fillShapes(style, matrix) {}
 }
 
-export class SVGNode extends PIXI.Graphics {
+export class SVGNode extends GraphicsNode {
 	/**
 	 * Create Graphics from svg subnode
 	 * @class
@@ -163,65 +161,12 @@ export class SVGNode extends PIXI.Graphics {
 	}
 
 	/**
-	 * Get `GraphicsData` under cursor if available. Similar as `containsPoint`, but return internal `GraphicsData`
-	 * @public
-	 * @method SVG#pickGraphicsData
-	 * @param {PIXI.Point} point - global point for intersection checking
-	 * @param {boolean} all - Include all intersected, otherwise first selected if exist
-	 * @return {Array<PIXI.GraphicsData>}  list of selected GraphicsData, can be empty or grater that 1
-	 */
-	pickGraphicsData(point, all) {
-		let picked = [];
-
-		point = this.worldTransform.applyInverse(point);
-
-		//@ts-ignore
-		const graphicsData = this.geometry.graphicsData;
-
-		for (let i = 0; i < graphicsData.length; ++i) {
-			const data = graphicsData[i];
-
-			if (!data.fillStyle.visible || !data.shape) {
-				continue;
-			}
-			if (data.matrix) {
-				data.matrix.applyInverse(point, tmpPoint);
-			} else {
-				tmpPoint.copyFrom(point);
-			}
-
-			if (data.shape.contains(tmpPoint.x, tmpPoint.y)) {
-				let skip = false;
-				if (data.holes) {
-					for (let i = 0; i < data.holes.length; i++) {
-						const hole = data.holes[i];
-						if (hole.shape.contains(tmpPoint.x, tmpPoint.y)) {
-							skip = true;
-							break;
-						}
-					}
-				}
-
-				if (!skip) {
-					if (!all) {
-						return [data];
-					} else {
-						picked.push(data);
-					}
-				}
-			}
-		}
-
-		return picked;
-	}
-
-	/**
 	 * Create a PIXI Graphic from SVG elements
 	 * @private
 	 * @method SVG#svgChildren
 	 * @param {Array<*>} children - Collection of SVG nodes
 	 * @param {*} [parentStyle=undefined] Whether to inherit fill settings.
-	 * @param {PIXI.Matrix} [parentMatrix=undefined] Matrix fro transformations
+	 * @param {DOMMatrix} [parentMatrix=undefined] Matrix fro transformations
 	 */
 	parseChildren(children, parentStyle, parentMatrix) {
 		for (let i = 0; i < children.length; i++) {
@@ -396,13 +341,7 @@ export class SVGNode extends PIXI.Graphics {
 		const pointsAttr = node.getAttribute("points");
 		const pointsRaw = pointsAttr.split(/[ ,]/g);
 		const points = pointsRaw.reduce((acc, p) => (p && acc.push(parseFloat(p)), acc), []);
-		this.drawPolygon(points);
-		if (!close) {
-			//@ts-ignore
-			const gd = this.geometry.graphicsData;
-			//@ts-ignore
-			gd[gd.length - 1].shape.closeStroke = false;
-		}
+		this.drawPolygon(points, close);
 	}
 
 	/**
@@ -410,7 +349,7 @@ export class SVGNode extends PIXI.Graphics {
 	 * @private
 	 * @method SVG#fillShapes
 	 * @param {*} style
-	 * @param {PIXI.Matrix} matrix
+	 * @param {DOMMatrix} matrix
 	 */
 	fillShapes(style, matrix) {
 		const { fill, opacity, stroke, strokeWidth, strokeOpacity, fillOpacity } = style;
@@ -454,233 +393,8 @@ export class SVGNode extends PIXI.Graphics {
 	 */
 	svgPath(node) {
 		const d = node.getAttribute("d");
-		let x = 0,
-			y = 0;
-		let iX = 0,
-			iY = 0;
-		const commands = dPathParse(d);
-		let prevCommand = undefined;
 
-		for (var i = 0; i < commands.length; i++) {
-			const command = commands[i];
-
-			switch (command.code) {
-				case "m": {
-					this.moveTo((x += command.end.x), (y += command.end.y));
-					iX = x, iY = y;
-					break;
-				}
-				case "M": {
-					this.moveTo((x = command.end.x), (y = command.end.y));
-					iX = x, iY = y;
-					break;
-				}
-				case "H": {
-					this.lineTo((x = command.value), y);
-					break;
-				}
-				case "h": {
-					this.lineTo((x += command.value), y);
-					break;
-				}
-				case "V": {
-					this.lineTo(x, (y = command.value));
-					break;
-				}
-				case "v": {
-					this.lineTo(x, (y += command.value));
-					break;
-				}
-				case "Z":
-				case "z": {
-					//jump corete to first point
-					x = iX, y = iY;
-					this.closePath();
-					break;
-				}
-				case "L": {
-					const { x: nx, y: ny } = command.end;
-
-					if (Math.abs(x - nx) + Math.abs(y - ny) <= EPS){
-						x = nx, y = ny;
-						break;
-					}
-
-					this.lineTo((x = nx), (y = ny));
-					break;
-				}
-				case "l": {
-					const { x: dx, y: dy } = command.end;
-
-					if (Math.abs(dx) + Math.abs(dy) <= EPS) {
-						x += dx, y += dy;
-						break;
-					}
-
-					this.lineTo((x += dx), (y += dy));
-					break;
-				}
-				//short C, selet cp1 from last command
-				case "S": {
-					let cp1 = { x, y };
-					let cp2 = command.cp;
-
-					//S is compute points from old points
-					if (prevCommand.code == "S" || prevCommand.code == "C") {
-						const lc = prevCommand.cp2 || prevCommand.cp;
-						cp1.x = 2 * prevCommand.end.x - lc.x;
-						cp1.y = 2 * prevCommand.end.y - lc.y;
-					} else {
-						cp1 = cp2;
-					}
-
-					this.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, (x = command.end.x), (y = command.end.y));
-					break;
-				}
-				case "C": {
-					const cp1 = command.cp1;
-					const cp2 = command.cp2;
-
-					this.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, (x = command.end.x), (y = command.end.y));
-					break;
-				}
-				//diff!!
-				//short C, select cp1 from last command
-				case "s": {
-					const currX = x;
-					const currY = y;
-
-					let cp1 = { x, y };
-					let cp2 = command.cp;
-
-					//S is compute points from old points
-					if (prevCommand.code == "s" || prevCommand.code == "c") {
-						const lc = prevCommand.cp2 || prevCommand.cp;
-						cp1.x = prevCommand.end.x - lc.x;
-						cp1.y = prevCommand.end.y - lc.y;
-					} else {
-						this.quadraticCurveTo(currX + cp2.x, currY + cp2.y, (x += command.end.x), (y += command.end.y));
-						break;
-					}
-
-					this.bezierCurveTo(
-						currX + cp1.x,
-						currY + cp1.y,
-						currX + cp2.x,
-						currY + cp2.y,
-						(x += command.end.x),
-						(y += command.end.y)
-					);
-					break;
-				}
-				case "c": {
-					const currX = x;
-					const currY = y;
-					const cp1 = command.cp1;
-					const cp2 = command.cp2;
-
-					this.bezierCurveTo(
-						currX + cp1.x,
-						currY + cp1.y,
-						currX + cp2.x,
-						currY + cp2.y,
-						(x += command.end.x),
-						(y += command.end.y)
-					);
-					break;
-				}
-				case "t": {
-					let cp = command.cp || { x, y };
-					let prevCp = { x, y };
-
-					if (prevCommand.code != "t" || prevCommand.code != "q") {
-						prevCp = prevCommand.cp || prevCommand.cp2 || prevCommand.end;
-						cp.x = prevCommand.end.x - prevCp.x;
-						cp.y = prevCommand.end.y - prevCp.y;
-					} else {
-						this.lineTo((x += command.end.x), (y += command.end.y));
-						break;
-					}
-
-					const currX = x;
-					const currY = y;
-
-					this.quadraticCurveTo(currX + cp.x, currY + cp.y, (x += command.end.x), (y += command.end.y));
-					break;
-				}
-				case "q": {
-					const currX = x;
-					const currY = y;
-
-					this.quadraticCurveTo(
-						currX + command.cp.x,
-						currY + command.cp.y,
-						(x += command.end.x),
-						(y += command.end.y)
-					);
-					break;
-				}
-
-				case "T": {
-					let cp = command.cp || { x, y };
-					let prevCp = { x, y };
-
-					if (prevCommand.code != "T" || prevCommand.code != "Q") {
-						prevCp = prevCommand.cp || prevCommand.cp2 || prevCommand.end;
-						cp.x = 2 * prevCommand.end.x - prevCp.x;
-						cp.y = 2 * prevCommand.end.y - prevCp.y;
-					} else {
-						this.lineTo((x = command.end.x), (y = command.end.y));
-						break;
-					}
-
-					this.quadraticCurveTo(cp.x, cp.y, (x = command.end.x), (y = command.end.y));
-					break;
-				}
-
-				case "Q": {
-					let cp = command.cp;
-					this.quadraticCurveTo(cp.x, cp.y, (x = command.end.x), (y = command.end.y));
-					break;
-				}
-
-				//arc as bezier
-				case "a":
-				case "A": {
-					const currX = x;
-					const currY = y;
-
-					if (command.relative) {
-						x += command.end.x;
-						y += command.end.y;
-					} else {
-						x = command.end.x;
-						y = command.end.y;
-					}
-					const beziers = arcToBezier({
-						x1: currX,
-						y1: currY,
-						rx: command.radii.x,
-						ry: command.radii.y,
-						x2: x,
-						y2: y,
-						phi: command.rotation,
-						fa: command.large,
-						fs: command.clockwise
-					});
-					for (let b of beziers) {
-						this.bezierCurveTo(b[2], b[3], b[4], b[5], b[6], b[7]);
-					}
-					break;
-				}
-				default: {
-					console.info("[SVGUtils] Draw command not supported:", command.code, command);
-				}
-			}
-
-			//save previous command fro C S and Q
-			prevCommand = command;
-		}
+		this.addPath(new Path2D(d));
 	}
 }
 
