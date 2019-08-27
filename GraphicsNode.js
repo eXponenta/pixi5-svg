@@ -1,3 +1,11 @@
+function intToRGBA(color, alpha = 1) {
+	let r = (color >> 16) & 0xff;
+	let g = (color >> 8) & 0xff;
+	let b = color & 0xff;
+
+	return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 export class GraphicsNode extends Path2D {
 	constructor() {
 		super();
@@ -6,7 +14,7 @@ export class GraphicsNode extends Path2D {
 		this.style = {
 			fill: {
 				color: 0xffffff,
-				opacity: 1
+				alpha: 1
 			},
 			stroke: {
 				color: 0xffffff,
@@ -15,7 +23,12 @@ export class GraphicsNode extends Path2D {
 			}
 		};
 
-		this._matrix = new DOMMatrix();
+		this._matrix = undefined;
+
+		/**
+		 * @type {GraphicsNode []}
+		 */
+		this.children = [];
 	}
 
 	addChild(...childs) {
@@ -102,7 +115,7 @@ export class GraphicsNode extends Path2D {
 		const fill = this.style.fill;
 
 		fill.color = color;
-		fill.opacity = alpha;
+		fill.alpha = alpha;
 
 		return this;
 	}
@@ -118,16 +131,56 @@ export class GraphicsNode extends Path2D {
 	}
 
 	setMatrix(matrix) {
-		this._matrix = matrix;
+		this._matrix = matrix ? DOMMatrix.fromMatrix(matrix) : undefined;
 
 		return this;
-    }
-    
-    /**
-     * Draw self into context
-     * @param {CanvasRenderingContext2D} context 
-     */
-    draw( context ) {
+	}
 
-    }
+	/**
+	 * Draw self into context
+	 * @param {CanvasRenderingContext2D} context
+	 * @param {boolean} safeMode save context state before changing
+	 */
+
+	draw(context, safeMode = true) {
+		if (safeMode) {
+			context.save();
+		}
+
+		let l = this.children.length;
+
+		for (let i = 0; i < l; i++) {
+			let c = this.children[i];
+			if (c.draw) {
+				c.draw(context, true);
+			}
+		}
+
+		const fill = this.style.fill;
+		const stroke = this.style.stroke;
+
+		if (this._matrix) {
+			const { a, b, c, d, e, f } = this._matrix;
+
+			context.transform(a, b, c, d, e, f);
+		}
+
+		if (fill.alpha > 0) {
+			context.fillStyle = intToRGBA(fill.color, fill.alpha);
+			context.fill(this, "evenodd");
+		}
+
+		if (stroke.alpha > 0 && stroke.width > 0) {
+			context.lineWidth = stroke.width;
+            context.strokeStyle = intToRGBA(stroke.color, stroke.alpha);
+            context.lineJoin = "round";
+            context.lineCap = "round";
+
+			context.stroke(this);
+		}
+
+		if (safeMode) {
+			context.restore();
+		}
+	}
 }

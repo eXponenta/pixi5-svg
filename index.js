@@ -13,8 +13,6 @@ const EPS = 0.0001;
  * @property {boolean} [unpackTree] unpack node tree, otherwise build single Graphics
  */
 
-const tmpPoint = new PIXI.Point();
-
 const DEFAULT = {
 	unpackTree: false,
 	lineColor: 0,
@@ -71,12 +69,12 @@ function parseSvgTransform(node) {
 		return undefined;
 	}
 
-	const matrix = new DOMMatrix();
+	let matrix = new DOMMatrix();
 	const transformAttr = node.getAttribute("transform");
 	const commands = parseTransform(transformAttr);
 
 	//apply transform matrix right to left
-	for (let key = commands.length - 1; key >= 0; --key) {
+	for (let key = 0 ; key < commands.length; key ++) {
 		let command = commands[key].command;
 		let values = commands[key].params;
 
@@ -94,13 +92,13 @@ function parseSvgTransform(node) {
 			case "translate": {
 				const dx = parseScientific(values[0]);
 				const dy = parseScientific(values[1]) || 0;
-				matrix.translate(dx, dy);
+				matrix.translateSelf(dx, dy);
 				break;
 			}
 			case "scale": {
 				const sx = parseScientific(values[0]);
 				const sy = values.length > 1 ? parseScientific(values[1]) : sx;
-				matrix.scale(sx, sy);
+				matrix.scaleSelf(sx, sy);
 				break;
 			}
 			case "rotate": {
@@ -113,9 +111,9 @@ function parseSvgTransform(node) {
 				}
 
 				matrix
-					.translate(-dx, -dy)
-					.rotate((parseScientific(values[0]) * Math.PI) / 180)
-					.translate(dx, dy);
+					.translateSelf(dx, dy)
+					.rotateSelf(parseScientific(values[0]))
+					.translateSelf(-dx, -dy);
 
 				break;
 			}
@@ -126,23 +124,6 @@ function parseSvgTransform(node) {
 	}
 
 	return matrix;
-}
-
-export class SVGGroup {
-	/**
-	 * Create Container from svg subnode of 'g'
-	 * @class
-	 * @public
-	 * @param {SVGElement} svg
-	 */
-	constructor(svg, options) {
-		this.options = options;
-		this.dataNode = svg;
-		this.type = svg.nodeName.toLowerCase();
-		this.name = svg.getAttribute("id") || "";
-	}
-
-	fillShapes(style, matrix) {}
 }
 
 export class SVGNode extends GraphicsNode {
@@ -182,8 +163,7 @@ export class SVGNode extends GraphicsNode {
 			let shape = this;
 
 			if (this.options.unpackTree) {
-				//@ts-ignore
-				shape = nodeType === "g" ? new SVGGroup(child, this.options) : new SVGNode(child, this.options);
+				shape = new SVGNode(child, this.options);
 			}
 
 			//compile full style inherited from all parents
@@ -398,9 +378,6 @@ export class SVGNode extends GraphicsNode {
 	}
 }
 
-//faster, better, longer!!
-SVGGroup.prototype.parseChildren = SVGNode.prototype.parseChildren;
-
 export default class SVG extends SVGNode {
 	/**
 	 * Create Graphics from svg
@@ -422,9 +399,31 @@ export default class SVG extends SVGNode {
 		}
 
 		super(svg, Object.assign({}, DEFAULT, options || {}));
-
 		//@ts-ignore
 		this.parseChildren(svg.children);
 		this.type = "svg";
+
+		this._width = +svg.getAttribute("width");
+		this._height = +svg.getAttribute("height");
+
+		if(!this._width || !this._height) {
+
+			document.body.appendChild(svg);
+			
+			const bbox = svg.getBBox();
+
+			this._width = bbox.width + bbox.x;
+			this._height = bbox.height + bbox.y;
+			
+			document.body.removeChild(svg);
+		}
+	}
+
+	get width() {
+		return this._width;
+	}
+
+	get height() {
+		return this._height;
 	}
 }
