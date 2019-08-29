@@ -1,3 +1,5 @@
+import * as PIXI from "pixi.js";
+
 const TMP_STYLE = {
 	fill: { color: 0, alpha: 1 },
 	stroke: { color: 0, alpha: 0, width: 0 }

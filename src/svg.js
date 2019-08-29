@@ -47,8 +47,12 @@ export class SVG extends SVGNode {
         this.nodeId = -1;
         this.type = "svg";
         this.pallete = this.options.pallete ? new Pallete(this, 128) : undefined;
-        
+        this.root = this;
 		//@ts-ignore
-		this.parseChildren(svg.children);
+        this.parseChildren(svg.children);
+        
+        if(this.pallete) {
+            this.pallete.commit();
+        }
 	}
 }

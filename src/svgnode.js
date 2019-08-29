@@ -7,6 +7,7 @@ import { SVG } from "./svg";
 import { SVGGroup } from "./svggroup";
 import { parseSvgStyle, parseSvgTransform, arcToBezier } from "./utils";
 import { Pallete } from "./pallete";
+import { FilledGeometry } from "./filledgeometry";
 
 const EPS = 0.0001;
 const tmpPoint = new PIXI.Point();
@@ -31,7 +32,7 @@ export class SVGNode extends PIXI.Graphics {
 	 * @param {DefaultOptions} options
 	 */
 	constructor(svg, options, root = undefined, id = -1) {
-		super();
+		super(new FilledGeometry());
 		this.options = options;
 		this.dataNode = svg;
 		this.type = svg.nodeName.toLowerCase();
@@ -101,12 +102,16 @@ export class SVGNode extends PIXI.Graphics {
 	 * @param {PIXI.Matrix} [parentMatrix=undefined] Matrix fro transformations
 	 */
 	parseChildren(children, parentStyle, parentMatrix) {
-		for (let i = 0; i < children.length; i++) {
-			const child = children[i];
+		let nodeId = this.nodeId;
 
+		for (let i = 0; i < children.length; i++) {
+			
+			const child = children[i];
 			const nodeStyle = parseSvgStyle(child);
 			const matrix = parseSvgTransform(child);
 			const nodeType = child.nodeName.toLowerCase();
+			
+			nodeId  ++;
 
 			/**
 			 * @type {SVG | SVGNode}
@@ -115,9 +120,11 @@ export class SVGNode extends PIXI.Graphics {
 
 			if (this.options.unpackTree) {
 				//@ts-ignore
-				shape = nodeType === "g" ? new SVGGroup(child, this.options,  this.nodeId + 1) : new SVGNode(child, this.options, this.nodeId + 1);
+				shape = nodeType === "g" 
+					? new SVGGroup(child, this.options, this.root,  nodeId) 
+					: new SVGNode(child, this.options, this.root, nodeId);
 			}
-
+			
 			//compile full style inherited from all parents
 			const fullStyle = Object.assign({}, parentStyle || {}, nodeStyle);
 
@@ -310,7 +317,7 @@ export class SVGNode extends PIXI.Graphics {
 			fillOpacityValue = opacity || fillOpacity ? parseFloat(opacity || fillOpacity) : this.options.fillOpacity;
 		}
 
-		const usePalllete = this.options.pallete && this.root && this.id > -1;
+		const usePalllete = this.options.pallete && this.root && this.nodeId > -1;
 
 		if(!usePalllete) {
 			if (fill) {
@@ -329,8 +336,8 @@ export class SVGNode extends PIXI.Graphics {
 			/**
 			 * @type {Pallete}
 			 */
-			const p = this.root.palette;
-			if(!p.getStyle(this.id)) {
+			const p = this.root.pallete;
+			if(!p.getStyle(this.nodeId)) {
 				const hex = isFillable ? this.hexToUint(fill) : 0;
 				const style = {
 					fill : {
@@ -343,11 +350,11 @@ export class SVGNode extends PIXI.Graphics {
 						width : lineWidth / 10 // use global defenition of initial width
 					}
 				};
-				p.setStyle(this.id, style);
+				p.setStyle(this.nodeId, style);
 			}
 
-			const fillTexture = this.root.palette.getFillTexture(this.id);
-			const strokeTexture = this.root.palette.getStrokeTexture(this.id);
+			const fillTexture = p.getFillTexture(this.nodeId);
+			const strokeTexture = p.getStrokeTexture(this.nodeId);
 			
 			//width from texture not supported now
 
