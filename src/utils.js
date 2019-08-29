@@ -1,3 +1,109 @@
+
+/**
+ * Get the style property and parse options.
+ * @param {SVGElement} node
+ * @return {Object} Style attributes
+ */
+export function parseSvgStyle(node) {
+	const style = node.getAttribute("style");
+	const result = {
+		fill: node.getAttribute("fill"),
+		opacity: node.getAttribute("opacity"),
+		fillOpacity: node.getAttribute("fill-opacity"),
+		stroke: node.getAttribute("stroke"),
+		strokeOpacity: node.getAttribute("stroke-opacity"),
+		strokeWidth: node.getAttribute("stroke-width")
+	};
+	if (style !== null) {
+		style.split(";").forEach(prop => {
+			if (prop) {
+				const [name, value] = prop.split(":");
+				if (name && value) {
+					result[name.trim()] = value.trim();
+				}
+			}
+		});
+		if (result["stroke-width"]) {
+			result.strokeWidth = result["stroke-width"];
+			delete result["stroke-width"];
+		}
+	}
+
+	for (let key in result) {
+		if (result[key] === null) {
+			delete result[key];
+		}
+	}
+	return result;
+}
+
+/**
+ * Parse transform attribute
+ * @param {SVGElement} node
+ */
+export function parseSvgTransform(node) {
+	if (!node.getAttribute("transform")) {
+		return undefined;
+	}
+
+	const matrix = new PIXI.Matrix();
+	const transformAttr = node.getAttribute("transform");
+	const commands = parseTransform(transformAttr);
+
+	//apply transform matrix right to left
+	for (let key = commands.length - 1; key >= 0; --key) {
+		let command = commands[key].command;
+		let values = commands[key].params;
+
+		switch (command) {
+			case "matrix": {
+				matrix.a = parseScientific(values[0]);
+				matrix.b = parseScientific(values[1]);
+				matrix.c = parseScientific(values[2]);
+				matrix.d = parseScientific(values[3]);
+				matrix.tx = parseScientific(values[4]);
+				matrix.ty = parseScientific(values[5]);
+
+				return matrix;
+			}
+			case "translate": {
+				const dx = parseScientific(values[0]);
+				const dy = parseScientific(values[1]) || 0;
+				matrix.translate(dx, dy);
+				break;
+			}
+			case "scale": {
+				const sx = parseScientific(values[0]);
+				const sy = values.length > 1 ? parseScientific(values[1]) : sx;
+				matrix.scale(sx, sy);
+				break;
+			}
+			case "rotate": {
+				let dx = 0;
+				let dy = 0;
+
+				if (values.length > 1) {
+					dx = parseScientific(values[1]);
+					dy = parseScientific(values[2]);
+				}
+
+				matrix
+					.translate(-dx, -dy)
+					.rotate((parseScientific(values[0]) * Math.PI) / 180)
+					.translate(dx, dy);
+
+				break;
+			}
+			default: {
+				console.log(`Command ${command} can't implement yet`);
+			}
+		}
+	}
+
+	return matrix;
+}
+
+
 export function parseScientific(numberString) {
 	var info = /([\d\\.]+)e-(\d+)/i.exec(numberString);
 	if (!info) {
