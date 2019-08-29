@@ -6,6 +6,7 @@ import * as PIXI from "pixi.js";
 import { SVG } from "./svg";
 import { SVGGroup } from "./svggroup";
 import { parseSvgStyle, parseSvgTransform, arcToBezier } from "./utils";
+import { Pallete } from "./pallete";
 
 const EPS = 0.0001;
 const tmpPoint = new PIXI.Point();
@@ -18,6 +19,7 @@ const tmpPoint = new PIXI.Point();
  * @property {number} [fillColor] default fill color
  * @property {number} [fillOpacity] default fill opacity
  * @property {boolean} [unpackTree] unpack node tree, otherwise build single Graphics
+ * @property {boolean} [pallete] generate palette texture instead using vertex filling, faster colors changings without rebuilding
  */
 
 export class SVGNode extends PIXI.Graphics {
@@ -28,11 +30,13 @@ export class SVGNode extends PIXI.Graphics {
 	 * @param {SVGElement} svg
 	 * @param {DefaultOptions} options
 	 */
-	constructor(svg, options) {
+	constructor(svg, options, root = undefined, id = -1) {
 		super();
 		this.options = options;
 		this.dataNode = svg;
 		this.type = svg.nodeName.toLowerCase();
+		this.root = root;
+		this.nodeId = id;
 	}
 
 	/**
@@ -111,7 +115,7 @@ export class SVGNode extends PIXI.Graphics {
 
 			if (this.options.unpackTree) {
 				//@ts-ignore
-				shape = nodeType === "g" ? new SVGGroup(child, this.options) : new SVGNode(child, this.options);
+				shape = nodeType === "g" ? new SVGGroup(child, this.options,  this.nodeId + 1) : new SVGNode(child, this.options, this.nodeId + 1);
 			}
 
 			//compile full style inherited from all parents
@@ -306,17 +310,51 @@ export class SVGNode extends PIXI.Graphics {
 			fillOpacityValue = opacity || fillOpacity ? parseFloat(opacity || fillOpacity) : this.options.fillOpacity;
 		}
 
-		if (fill) {
-			if (!isFillable) {
-				this.beginFill(0, 0);
+		const usePalllete = this.options.pallete && this.root && this.id > -1;
+
+		if(!usePalllete) {
+			if (fill) {
+				if (!isFillable) {
+					this.beginFill(0, 0);
+				} else {
+					this.beginFill(this.hexToUint(fill), fillOpacityValue);
+				}
 			} else {
-				this.beginFill(this.hexToUint(fill), fillOpacityValue);
+				this.beginFill(this.options.fillColor, 1);
 			}
+			this.lineStyle(lineWidth, lineColor, strokeOpacityValue);
+
 		} else {
-			this.beginFill(this.options.fillColor, 1);
+
+			/**
+			 * @type {Pallete}
+			 */
+			const p = this.root.palette;
+			if(!p.getStyle(this.id)) {
+				const hex = isFillable ? this.hexToUint(fill) : 0;
+				const style = {
+					fill : {
+						color : hex,
+						alpha : isFillable ?  fillOpacityValue : 0
+					},
+					stroke :{
+						color : lineColor,
+						alpha : strokeOpacityValue,
+						width : lineWidth / 10 // use global defenition of initial width
+					}
+				};
+				p.setStyle(this.id, style);
+			}
+
+			const fillTexture = this.root.palette.getFillTexture(this.id);
+			const strokeTexture = this.root.palette.getStrokeTexture(this.id);
+			
+			//width from texture not supported now
+
+			this.lineTextureStyle(lineWidth, strokeTexture, 0xffffff, 1);
+			this.beginTextureFill(fillTexture, 0xffffff, 1);
 		}
 
-		this.lineStyle(lineWidth, lineColor, strokeOpacityValue);
 		this.setMatrix(matrix);
 	}
 

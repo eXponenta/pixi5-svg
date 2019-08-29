@@ -8,12 +8,14 @@ export class SVGGroup extends PIXI.Container {
 	 * @public
 	 * @param {SVGElement} svg
 	 */
-	constructor(svg, options) {
+	constructor(svg, options, root = undefined, id = -1) {
 		super();
 		this.options = options;
 		this.dataNode = svg;
 		this.type = svg.nodeName.toLowerCase();
 		this.name = svg.getAttribute("id") || "";
+		this.root = root;
+		this.nodeId = id;
 	}
 
 	fillShapes(style, matrix) {}

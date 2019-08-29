@@ -1,4 +1,5 @@
 import { SVGNode } from "./svgnode";
+import {Pallete} from "./pallete";
 
 /**
  * @typedef {Object} DefaultOptions
@@ -8,6 +9,7 @@ import { SVGNode } from "./svgnode";
  * @property {number} [fillColor] default fill color
  * @property {number} [fillOpacity] default fill opacity
  * @property {boolean} [unpackTree] unpack node tree, otherwise build single Graphics
+ * @property {boolean} [pallete] generate palette texture instead using vertex filling, faster colors changings without rebuilding
  */
 
 const DEFAULT = {
@@ -16,7 +18,8 @@ const DEFAULT = {
 	lineOpacity: 1,
 	fillColor: 0,
 	fillOpacity: 1,
-	lineWidth: 1
+    lineWidth: 1,
+    palette : false
 };
 
 export class SVG extends SVGNode {
@@ -39,10 +42,13 @@ export class SVG extends SVGNode {
 			}
 		}
 
-		super(svg, Object.assign({}, DEFAULT, options || {}));
-
+        super(svg, Object.assign({}, DEFAULT, options || {}));
+        
+        this.nodeId = -1;
+        this.type = "svg";
+        this.pallete = this.options.pallete ? new Pallete(this, 128) : undefined;
+        
 		//@ts-ignore
 		this.parseChildren(svg.children);
-		this.type = "svg";
 	}
 }
