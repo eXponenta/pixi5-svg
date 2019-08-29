@@ -2,15 +2,26 @@
 import * as PIXI from "pixi.js"
 
 export class FilledGeometry extends PIXI.GraphicsGeometry {
-	
+    
+    constructor(use32 = false) {
+        super();
+        this._use32 = use32;
+    }
+
 	addUvs(verts, uvs, texture, start, size, matrix)
     {
-        let index = 0;
         const uvsStart = uvs.length;
+        const baseTexture = texture.baseTexture;
+        const 
+            w = texture.frame.width,
+            h = texture.frame.height,
+            fx = texture.frame.x,
+            fy = texture.frame.y,
+            bw = baseTexture.width,
+            bh = baseTexture.height;
+
         
-		let w = texture.frame.width;
-		let h = texture.frame.height;
-		
+        let index = 0;
 		let maxX = -Infinity, minX = Infinity;
 		let maxY = -Infinity, minY = Infinity;
 		
@@ -19,12 +30,12 @@ export class FilledGeometry extends PIXI.GraphicsGeometry {
             let x = verts[(start + index) * 2];
             let y = verts[((start + index) * 2) + 1];
 			
-			maxX = Math.max(x, maxX);
-			minX = Math.min(x, minX);
+			maxX = x > maxX ? x : maxX;
+            minX = x < minX ? x : minX;
 
-			maxY = Math.max(y, maxY);
-			minY = Math.min(y, minY);
-			
+            maxY = y > maxY ? y : maxY;
+			minY = y < minY ? y : minY;
+
 			index ++;
 		}
 
@@ -44,18 +55,21 @@ export class FilledGeometry extends PIXI.GraphicsGeometry {
 
             index++;
 
-			x =  (x - minX) / (maxX - minX);
-			y =	 (y - minY) / (maxY - minY);
+			x =  fx + w * (x - minX) / (maxX - minX);
+            y =	 fy + h * (y - minY) / (maxY - minY);
+
+            x /= bw;
+            y /= bh;
 
             uvs.push(x, y);
         }
+    }
 
-        const baseTexture = texture.baseTexture;
+    buildDrawCalls() {
+        super.buildDrawCalls();
 
-        if (w < baseTexture.width
-            || h < baseTexture.height)
-        {
-            this.adjustUvs(uvs, texture, uvsStart, size);
+        if(this._use32  && this.indices.length > 0xffff) {
+            this._indexBuffer.update(new Uint32Array(this.indices));
         }
     }
 }

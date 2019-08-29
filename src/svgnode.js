@@ -21,6 +21,7 @@ const tmpPoint = new PIXI.Point();
  * @property {number} [fillOpacity] default fill opacity
  * @property {boolean} [unpackTree] unpack node tree, otherwise build single Graphics
  * @property {boolean} [pallete] generate palette texture instead using vertex filling, faster colors changings without rebuilding
+ * @property {boolean} [use32Indexes] use 32 index buffer insteand of 16
  */
 
 export class SVGNode extends PIXI.Graphics {
@@ -31,13 +32,14 @@ export class SVGNode extends PIXI.Graphics {
 	 * @param {SVGElement} svg
 	 * @param {DefaultOptions} options
 	 */
-	constructor(svg, options, root = undefined, id = -1) {
-		super(new FilledGeometry());
+	constructor(svg, options, root = undefined) {
+		super(new FilledGeometry(options.use32Indexes));
 		this.options = options;
 		this.dataNode = svg;
 		this.type = svg.nodeName.toLowerCase();
 		this.root = root;
-		this.nodeId = id;
+		
+		this.nodeId = SVG.nextID();
 	}
 
 	/**
@@ -102,16 +104,12 @@ export class SVGNode extends PIXI.Graphics {
 	 * @param {PIXI.Matrix} [parentMatrix=undefined] Matrix fro transformations
 	 */
 	parseChildren(children, parentStyle, parentMatrix) {
-		let nodeId = this.nodeId;
-
 		for (let i = 0; i < children.length; i++) {
 			
 			const child = children[i];
 			const nodeStyle = parseSvgStyle(child);
 			const matrix = parseSvgTransform(child);
 			const nodeType = child.nodeName.toLowerCase();
-			
-			nodeId  ++;
 
 			/**
 			 * @type {SVG | SVGNode}
@@ -121,8 +119,10 @@ export class SVGNode extends PIXI.Graphics {
 			if (this.options.unpackTree) {
 				//@ts-ignore
 				shape = nodeType === "g" 
-					? new SVGGroup(child, this.options, this.root,  nodeId) 
-					: new SVGNode(child, this.options, this.root, nodeId);
+					? new SVGGroup(child, this.options, this.root) 
+					: new SVGNode(child, this.options, this.root);
+			} else {
+				this.nodeId = SVG.nextID()
 			}
 			
 			//compile full style inherited from all parents

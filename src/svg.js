@@ -10,6 +10,7 @@ import {Pallete} from "./pallete";
  * @property {number} [fillOpacity] default fill opacity
  * @property {boolean} [unpackTree] unpack node tree, otherwise build single Graphics
  * @property {boolean} [pallete] generate palette texture instead using vertex filling, faster colors changings without rebuilding
+ * @property {boolean} [use32Indexes] use 32 index buffer insteand of 16
  */
 
 const DEFAULT = {
@@ -19,7 +20,8 @@ const DEFAULT = {
 	fillColor: 0,
 	fillOpacity: 1,
     lineWidth: 1,
-    palette : false
+    palette : false,
+    use32Indexes : false
 };
 
 export class SVG extends SVGNode {
@@ -44,15 +46,27 @@ export class SVG extends SVGNode {
 
         super(svg, Object.assign({}, DEFAULT, options || {}));
         
-        this.nodeId = -1;
-        this.type = "svg";
-        this.pallete = this.options.pallete ? new Pallete(this, 128) : undefined;
+        SVG.CHILD_ID = -1;
+
         this.root = this;
+        this.type = "svg";
+        this.nodeId = SVG.nextID();
+        this.pallete = this.options.pallete ? new Pallete(this, 128) : undefined;
+
 		//@ts-ignore
         this.parseChildren(svg.children);
-        
+
         if(this.pallete) {
             this.pallete.commit();
         }
-	}
+
+        SVG.CHILD_ID = -1;
+    }
+    
+}
+
+//ID interator
+SVG.CHILD_ID = -1;
+SVG.nextID = function() {
+    return SVG.CHILD_ID ++;
 }

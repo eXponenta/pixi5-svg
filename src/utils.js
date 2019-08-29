@@ -1,3 +1,4 @@
+import * as PIXI from "pixi.js";
 
 /**
  * Get the style property and parse options.

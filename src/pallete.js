@@ -53,12 +53,17 @@ class StyleDefenition {
 		let hw = texture.width / PIXEL_STRID;
 
 		const x = PIXEL_STRID * (id % hw);
-		const y = (id / texture.width) | 0;
+		const y = (id / hw) | 0;
 
 		// single pixel for fill (color + alpha), 2 pixels for stroke (color + alpha, width)
-		this.fillTexture = new PIXI.Texture(texture, new PIXI.Rectangle(x, y, 1, 1));
-		this.strokeTexture = new PIXI.Texture(texture, new PIXI.Rectangle(x, y, 2, 1));
-		this._dirty = true;
+		this.fillTexture = new PIXI.Texture(texture, new PIXI.Rectangle(x + .25, y + .25, .5, .5));
+		this.strokeTexture = new PIXI.Texture(texture, new PIXI.Rectangle(x + 1 + .25, y + .25, .5, .5));
+        
+        this.id = id;
+        this.palleteX = x;
+        this.palleteY = y;
+        
+        this._dirty = true;
 	}
 }
 
