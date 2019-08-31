@@ -1,5 +1,5 @@
 import { SVGNode } from "./svgnode";
-import {Pallete} from "./pallete";
+import { Pallete } from "./palleted/pallete";
 
 /**
  * @typedef {Object} DefaultOptions
@@ -19,9 +19,9 @@ const DEFAULT = {
 	lineOpacity: 1,
 	fillColor: 0,
 	fillOpacity: 1,
-    lineWidth: 1,
-    palette : false,
-    use32Indexes : false
+	lineWidth: 1,
+	palette: false,
+	use32Indexes: false
 };
 
 export class SVG extends SVGNode {
@@ -44,29 +44,28 @@ export class SVG extends SVGNode {
 			}
 		}
 
-        super(svg, Object.assign({}, DEFAULT, options || {}));
-        
-        SVG.CHILD_ID = -1;
+		super(svg, Object.assign({}, DEFAULT, options || {}));
 
-        this.root = this;
-        this.type = "svg";
-        this.nodeId = SVG.nextID();
-        this.pallete = this.options.pallete ? new Pallete(this, 128) : undefined;
+		SVG.CHILD_ID = -1;
+
+		this.root = this;
+		this.type = "svg";
+		this.nodeId = SVG.nextID();
+		this.pallete = this.options.pallete ? new Pallete(this, 128) : undefined;
 
 		//@ts-ignore
-        this.parseChildren(svg.children);
+		this.parseChildren(svg.children);
 
-        if(this.pallete) {
-            this.pallete.commit();
-        }
+		if (this.pallete) {
+			this.pallete.commit();
+		}
 
-        SVG.CHILD_ID = -1;
-    }
-    
+		SVG.CHILD_ID = -1;
+	}
 }
 
 //ID interator
 SVG.CHILD_ID = -1;
 SVG.nextID = function() {
-    return SVG.CHILD_ID ++;
-}
+	return SVG.CHILD_ID++;
+};

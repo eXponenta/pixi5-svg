@@ -1,12 +1,11 @@
 import tcolor from "tinycolor2";
 import dPathParse from "d-path-parser";
 
-import * as PIXI from "pixi.js";
-
+import { pixi as PIXI } from "./extends";
 import { SVG } from "./svg";
 import { SVGGroup } from "./svggroup";
 import { parseSvgStyle, parseSvgTransform, arcToBezier } from "./utils";
-import { Pallete } from "./pallete";
+import { Pallete } from "./palleted/pallete";
 import { FilledGeometry } from "./filledgeometry";
 
 const EPS = 0.0001;

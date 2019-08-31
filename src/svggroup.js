@@ -1,5 +1,5 @@
 import { SVGNode } from "./svgnode";
-import * as PIXI from "pixi.js";
+import { pixi as PIXI } from "./extends";
 import { SVG } from "./svg";
 
 export class SVGGroup extends PIXI.Container {

@@ -1,4 +1,4 @@
-import * as PIXI from "pixi.js";
+import { pixi as PIXI } from "./extends";
 
 /**
  * Get the style property and parse options.

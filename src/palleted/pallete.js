@@ -1,4 +1,4 @@
-import * as PIXI from "pixi.js";
+import { pixi as PIXI } from "../extends";
 
 const TMP_STYLE = {
 	fill: { color: 0, alpha: 1 },
@@ -56,14 +56,14 @@ class StyleDefenition {
 		const y = (id / hw) | 0;
 
 		// single pixel for fill (color + alpha), 2 pixels for stroke (color + alpha, width)
-		this.fillTexture = new PIXI.Texture(texture, new PIXI.Rectangle(x + .25, y + .25, .5, .5));
-		this.strokeTexture = new PIXI.Texture(texture, new PIXI.Rectangle(x + 1 + .25, y + .25, .5, .5));
-        
-        this.id = id;
-        this.palleteX = x;
-        this.palleteY = y;
-        
-        this._dirty = true;
+		this.fillTexture = new PIXI.Texture(texture, new PIXI.Rectangle(x + 0.25, y + 0.25, 0.5, 0.5));
+		this.strokeTexture = new PIXI.Texture(texture, new PIXI.Rectangle(x + 1 + 0.25, y + 0.25, 0.5, 0.5));
+
+		this.id = id;
+		this.palleteX = x;
+		this.palleteY = y;
+
+		this._dirty = true;
 	}
 }
 
@@ -88,6 +88,11 @@ export class Pallete {
 	get texture() {
 		return this._texture;
 	}
+
+    nextID() {
+        const id = this._styles.size;
+        return id;
+    }
 	/**
 	 * Get style from pallete
 	 * @param {number} id - style ID
@@ -143,13 +148,17 @@ export class Pallete {
 	 * @param {*} style
 	 * @param {*} immediate - set style and coomit to pallete texture
 	 */
-	setStyle(id, style, immediate = false) {
-		if (id === undefined || !style || (!style.fill && !style.stroke)) {
-			return false;
+	setStyle(id, style, immediate = false) {		
+        if(id === undefined || id < 0) {
+            id = this.nextID();
+        }
+
+        if (!style || (!style.fill && !style.stroke)) {
+			return undefined;
 		}
 
 		if (id > (this.size * this.size) / PIXEL_STRID) {
-			return false;
+			return undefined;
 		}
 
 		if (!this._data) {
@@ -176,13 +185,14 @@ export class Pallete {
 		//stroke and width data
 		colorToArray(styleDef.stroke.color, styleDef.stroke.alpha, dataIndex + 4, block);
 		block[dataIndex + 4 + 4] = (styleDef.stroke.width * 255) | 0;
+        block[dataIndex + 4 + 4 + 1] = (styleDef.stroke.aligment * 255) | 0;
 		block[dataIndex + 4 + 4 + 3] = 255;
 
 		if (immediate) {
 			this.commit();
 		}
 
-		return true;
+		return id;
 	}
 
 	/**
