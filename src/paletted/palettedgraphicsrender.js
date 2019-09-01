@@ -98,9 +98,11 @@ const vertex = `
 		gl_Position = vec4((projectionMatrix * translationMatrix * vec3(aVertexPosition, 1.0)).xy, 0.0, 1.0);
 
 		float shapeId = dot(aColor, cColor2ID);
-		highp int textureId = int(vTextureId);
-		
-		float size = uSamplersSize[textureId];
+        highp int textureId = int(vTextureId);
+        
+        //какие-то проблемы с рендерерром
+        
+		float size = 1./128.;//uSamplersSize[textureId];
 		float hsize = size * 4.;
 
 		vStrokeData = vec4(aColor.r, 0., 0., 0.);

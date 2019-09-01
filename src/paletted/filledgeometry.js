@@ -1,4 +1,4 @@
-import { pixi } from "./extends";
+import { pixi } from "../extends";
 
 export class FilledGeometry extends pixi.GraphicsGeometry {
 	constructor(use32 = false) {

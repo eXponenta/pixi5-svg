@@ -1,23 +1,23 @@
 import { pixi } from "../extends";
-import { FilledGeometry } from "../filledgeometry";
+import { FilledGeometry } from "./filledgeometry";
 import { Palette } from "./palette";
 
 export class PalettedGraphics extends pixi.Graphics {
     
-    constructor(pallete = undefined, use32 = false) {
+    constructor(palette = undefined, use32 = false) {
         super(new FilledGeometry(use32));
 
-        this.init(pallete);
+        this.init(palette);
     }
 
     /**
      * Init 
-     * @param {Palette} [pallete] 
+     * @param {Palette} [palette] 
      */
-    init(pallete = undefined) {		
-		this.palletIDs = [];
+    init(palette = undefined) {		
+		this.paletteIDs = [];
 		this.pluginName = "palettedGraphics";
-		this._palette = pallete || new Palette(this, 64);
+		this._palette = palette || new Palette(this, 64);
 		this._currentStyleId = undefined;
     }
     
@@ -34,7 +34,7 @@ export class PalettedGraphics extends pixi.Graphics {
         //store ID as color =)
         this.beginTextureFill(fillTexture, nextId);
         this._currentStyleId = nextId;
-        this.palletIDs.push(nextId);
+        this.paletteIDs.push(nextId);
 
         return this;
     }
@@ -44,7 +44,7 @@ export class PalettedGraphics extends pixi.Graphics {
             stroke: {
                 color,
                 alpha,
-                width :  Math.max(0, 255),
+                width :  Math.max(0, .8),
                 aligment
             }
         }, false);

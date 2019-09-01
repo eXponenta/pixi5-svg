@@ -68,10 +68,11 @@ class StyleDefenition {
 }
 
 export class Palette {
-	constructor(owner = undefined, size = 256) {
+	constructor(owner = undefined, size = 128) {
 		const canvas = document.createElement("canvas");
 
-		canvas.width = canvas.height = size;
+		//хз почему, но юниформы не синкаются, не получется передать в шейдер размер палитры
+		canvas.width = canvas.height = 128;
 
 		this._styles = new Map();
 		this._ctx = canvas.getContext("2d");
