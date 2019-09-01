@@ -101,7 +101,7 @@ const vertex = `
         highp int textureId = int(vTextureId);
         
         //какие-то проблемы с рендерерром
-        
+
 		float size = 1./128.;//uSamplersSize[textureId];
 		float hsize = size * 4.;
 
@@ -136,7 +136,7 @@ const fragment = `
         float width = vStrokeData.y;
         float align = vStrokeData.z;
         float factor = abs (uv.y - .5) * 2.;
-        float gap = max(.075, width * 0.05) ;
+        float gap = max(.075, width * 0.1) ;
         
         vec4 stroke = vStrokeColor;
         stroke *= 1. - smoothstep(width - gap, width  + gap, factor);
