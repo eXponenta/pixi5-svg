@@ -6,58 +6,23 @@ export class FilledGeometry extends pixi.GraphicsGeometry {
 		this._use32 = use32;
 	}
 
-	addUvs(verts, uvs, texture, start, size, matrix) {
-		const uvsStart = uvs.length;
-		const baseTexture = texture.baseTexture;
-		const w = texture.frame.width,
-			h = texture.frame.height,
-			fx = texture.frame.x,
-			fy = texture.frame.y,
-			bw = baseTexture.width,
-			bh = baseTexture.height;
+    addUvs(verts, uvs, texture, start, size, matrix)
+    {        
+        let index = 0;
+		
+        while (index < size)
+        {
+            let y = (start + index) % 2;
+            let x = (start + index) / (start + size);
+            uvs.push(x, y);
 
-		let index = 0;
-		let maxX = -Infinity,
-			minX = Infinity;
-		let maxY = -Infinity,
-			minY = Infinity;
+            index ++;
+        }
+    }
 
-		while (index < size) {
-			let x = verts[(start + index) * 2];
-			let y = verts[(start + index) * 2 + 1];
-
-			maxX = x > maxX ? x : maxX;
-			minX = x < minX ? x : minX;
-
-			maxY = y > maxY ? y : maxY;
-			minY = y < minY ? y : minY;
-
-			index++;
-		}
-
-		index = 0;
-		while (index < size) {
-			let x = verts[(start + index) * 2];
-			let y = verts[(start + index) * 2 + 1];
-
-			if (matrix) {
-				const nx = matrix.a * x + matrix.c * y + matrix.tx;
-
-				y = matrix.b * x + matrix.d * y + matrix.ty;
-				x = nx;
-			}
-
-			index++;
-
-			x = fx + (w * (x - minX)) / (maxX - minX);
-			y = fy + (h * (y - minY)) / (maxY - minY);
-
-			x /= bw;
-			y /= bh;
-
-			uvs.push(x, y);
-		}
-	}
+    isBatchable() {
+        return true;
+    }
 
 	buildDrawCalls() {
 		super.buildDrawCalls();

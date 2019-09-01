@@ -1,5 +1,4 @@
 import { SVGNode } from "./svgnode";
-import { Pallete } from "./palleted/pallete";
 
 /**
  * @typedef {Object} DefaultOptions
@@ -50,14 +49,12 @@ export class SVG extends SVGNode {
 
 		this.root = this;
 		this.type = "svg";
-		this.nodeId = SVG.nextID();
-		this.pallete = this.options.pallete ? new Pallete(this, 128) : undefined;
 
 		//@ts-ignore
 		this.parseChildren(svg.children);
 
-		if (this.pallete) {
-			this.pallete.commit();
+		if (this.palette) {
+			this.palette.commit();
 		}
 
 		SVG.CHILD_ID = -1;

@@ -1,6 +1,6 @@
 import { pixi } from "./../extends";
 
-class PalletedShaderGenerator
+class PalettedShaderGenerator
 {
     /**
      * @param {string} vertexSrc - Vertex shader
@@ -38,20 +38,17 @@ class PalletedShaderGenerator
 			vertexSrc = vertexSrc.replace(/%count%/gi, `${maxTextures}`);
 			fragmentSrc = fragmentSrc.replace(/%count%/gi, `${maxTextures}`);
             
-			this.programCache[maxTextures] = new PIXI.Program(vertexSrc, fragmentSrc);
-			
-			console.log(vertexSrc);
-
+			this.programCache[maxTextures] = new pixi.Program(vertexSrc, fragmentSrc);
 		}
 
         const uniforms = {
             tint: new Float32Array([1, 1, 1, 1]),
-            translationMatrix: new PIXI.Matrix(),
-			uSamplersSize : new Float32Array(maxTextures * 2),
+            translationMatrix: new pixi.Matrix(),
+			uSamplersSize : new Float32Array(maxTextures),
             default: this.defaultGroupCache[maxTextures],
         };
 
-        return new PIXI.Shader(this.programCache[maxTextures], uniforms);
+        return new pixi.Shader(this.programCache[maxTextures], uniforms);
     }
 }
 
@@ -75,7 +72,7 @@ const vertex = `
 	varying vec4 vStrokeColor;
 	varying vec4 vStrokeData;
 
-	const vec4 cColor2ID = vec4(0., 256., 1., 0.);
+	const vec4 cColor2ID = vec4(0., 256. * 255., 255., 0.);
 
 	void main(void){
 		gl_Position = vec4((projectionMatrix * translationMatrix * vec3(aVertexPosition, 1.0)).xy, 0.0, 1.0);
@@ -83,10 +80,10 @@ const vertex = `
 		float shapeId = dot(aColor, cColor2ID);
 		highp int textureId = int(vTextureId);
 		
-		float size = uSamplersSize[textureId * 2];
+		float size = uSamplersSize[textureId];
 		float hsize = size * 4.;
 
-		vec2 pos = .5 + vec2(4. * mod(shapeId, 1. / hsize), floor(shapeId * hsize));
+		vec2 pos = 0.5 + vec2(4. * mod(shapeId, 1. / hsize), floor(shapeId * hsize));
 		pos *= size;
 
 		vStrokeData = vec4(aColor.r, 0., 0., 0.);
@@ -115,7 +112,18 @@ const fragment = `
 	uniform sampler2D uSamplers[%count%];
 
 	void main(void){
-		gl_FragColor = vColor * mix(vFillColor, vStrokeColor, vStrokeColor.r);
+
+        vec2 uv = vTextureCoord;
+        
+        float width = vStrokeData.y;
+        float align = vStrokeData.z;
+        float factor = abs (uv.y - .5) * 2.;
+        float gap = max(.075, width * 0.05) ;
+        
+        vec4 stroke = vStrokeColor;
+        stroke *= 1. - smoothstep(width - gap, width  + gap, factor);
+        
+		gl_FragColor = vColor * mix(vFillColor, stroke, vStrokeData.r);
 	}
 `;
 
@@ -127,13 +135,13 @@ const {
 	settings, BaseTexture
 } = pixi;
 
-class PalletedGraphicsRenderer extends pixi.AbstractBatchRenderer {
+export class PalettedGraphicsRenderer extends pixi.AbstractBatchRenderer {
 	
 	constructor(renderer) {
 		super(renderer);
 
-		this.shaderGenerator = new PalletedShaderGenerator(vertex, fragment);
-		this.geometryClass = PIXI.BatchGeometry;
+		this.shaderGenerator = new PalettedShaderGenerator(vertex, fragment);
+		this.geometryClass = pixi.BatchGeometry;
 		this.vertexSize = 6;
 	}
 	
@@ -287,19 +295,16 @@ class PalletedGraphicsRenderer extends pixi.AbstractBatchRenderer {
             {
 				const base = group.textures[j];
 
-				uSamplersSize[j * 2] = 1. / base.width;
-				uSamplersSize[j * 2 + 1] = 1. / base.height;
+				uSamplersSize[j] = 1. / base.width;
                 textureSystem.bind(base, j);
                 group.textures[j] = null;
             }
 
-			shaderSystem.syncUniformGroup(shader.uniformGroup);
+            debugger
+            shaderSystem.syncUniformGroup(shader.uniformGroup);
             stateSystem.setBlendMode(group.blend);
             gl.drawElements(group.type, group.size, gl.UNSIGNED_SHORT, group.start * 2);
         }
 	}
 }
 
-//register renderer
-//@ts-ignore
-pixi.Renderer.registerPlugin("palletedGraphics", PalletedGraphicsRenderer);

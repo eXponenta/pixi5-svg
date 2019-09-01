@@ -60,14 +60,14 @@ class StyleDefenition {
 		this.strokeTexture = new PIXI.Texture(texture, new PIXI.Rectangle(x + 1 + 0.25, y + 0.25, 0.5, 0.5));
 
 		this.id = id;
-		this.palleteX = x;
-		this.palleteY = y;
+		this.paletteX = x;
+		this.paletteY = y;
 
 		this._dirty = true;
 	}
 }
 
-export class Pallete {
+export class Palette {
 	constructor(owner = undefined, size = 256) {
 		const canvas = document.createElement("canvas");
 
@@ -80,6 +80,7 @@ export class Pallete {
 		this._texture = PIXI.BaseTexture.from(canvas, {
 			scaleMode: PIXI.SCALE_MODES.NEAREST
 		});
+		
 
 		this.owner = owner;
 		this.size = size;
