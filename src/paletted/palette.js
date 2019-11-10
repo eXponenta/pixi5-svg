@@ -91,10 +91,11 @@ export class Palette {
 		return this._texture;
 	}
 
-    nextID() {
-        const id = this._styles.size;
-        return id;
-    }
+	nextID() {
+		const id = this._styles.size;
+		return id;
+	}
+
 	/**
 	 * Get style from pallete
 	 * @param {number} id - style ID
@@ -151,11 +152,11 @@ export class Palette {
 	 * @param {*} immediate - set style and coomit to pallete texture
 	 */
 	setStyle(id, style, immediate = false) {		
-        if(id === undefined || id < 0) {
-            id = this.nextID();
-        }
+		if(id === undefined || id < 0) {
+			id = this.nextID();
+		}
 
-        if (!style || (!style.fill && !style.stroke)) {
+		if (!style || (!style.fill && !style.stroke)) {
 			return undefined;
 		}
 
@@ -187,7 +188,7 @@ export class Palette {
 		//stroke and width data
 		colorToArray(styleDef.stroke.color, styleDef.stroke.alpha, dataIndex + 4, block);
 		block[dataIndex + 4 + 4] = (styleDef.stroke.width * 255) | 0;
-        block[dataIndex + 4 + 4 + 1] = (styleDef.stroke.aligment * 255) | 0;
+		block[dataIndex + 4 + 4 + 1] = (styleDef.stroke.aligment * 255) | 0;
 		block[dataIndex + 4 + 4 + 3] = 255;
 
 		if (immediate) {

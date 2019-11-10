@@ -3,12 +3,12 @@ import { PalettedGraphics } from "./palettedgraphics"
 import { PalettedGraphicsRenderer } from "./palettedgraphicsrender"
 
 export {
-    Palette, PalettedGraphics, PalettedGraphicsRenderer
+	Palette, PalettedGraphics, PalettedGraphicsRenderer
 }
 
 export function registerPlugin(render) {
-    if(!render.registerPlugin) {
-        throw new Error("Plugin can't be registered!");
-    }
-    render.registerPlugin("palettedGraphics", PalettedGraphicsRenderer);
+	if(!render.registerPlugin) {
+		throw new Error("Plugin can't be registered!");
+	}
+	render.registerPlugin("palettedGraphics", PalettedGraphicsRenderer);
 }

@@ -51,20 +51,20 @@ class PalettedShaderGenerator {
 	generateSampleSrc(maxTextures) {
 		let src = "\n\n";
 		for (let i = 0; i < maxTextures; i++) {
-            
-            if (i > 0) {
+			
+			if (i > 0) {
 				src += "\nelse ";
 			}
-            
-            if (i < maxTextures - 1) {
+			
+			if (i < maxTextures - 1) {
 				src += `if(aTextureId < ${i}.5)`;
 			}
-            
-            src += `{
-                vStrokeColor = texture2D(uSamplers[${i}], pS);
-                vStrokeData.yz = texture2D(uSamplers[${i}], pD).xy;
-                vFillColor = texture2D(uSamplers[${i}], p);
-            }`;
+			
+			src += `{
+				vStrokeColor = texture2D(uSamplers[${i}], pS);
+				vStrokeData.yz = texture2D(uSamplers[${i}], pD).xy;
+				vFillColor = texture2D(uSamplers[${i}], p);
+			}`;
 		}
 		src += "\n";
 		src += "\n";
@@ -98,19 +98,19 @@ const vertex = `
 		gl_Position = vec4((projectionMatrix * translationMatrix * vec3(aVertexPosition, 1.0)).xy, 0.0, 1.0);
 
 		float shapeId = dot(aColor, cColor2ID);
-        highp int textureId = int(vTextureId);
-        
-        //какие-то проблемы с рендерерром
+		highp int textureId = int(vTextureId);
+
+		//какие-то проблемы с рендерерром
 
 		float size = 1./128.;//uSamplersSize[textureId];
 		float hsize = size * 4.;
 
 		vStrokeData = vec4(aColor.r, 0., 0., 0.);
-		
+
 		vec2 p = size * ( 0.5 + vec2(4. * mod(shapeId, 1. / hsize), floor(shapeId * hsize)));
-        vec2 pS = p + vec2(1. * size, 0.);
-        vec2 pD = p + vec2(2. * size, 0.);
-        
+		vec2 pS = p + vec2(1. * size, 0.);
+		vec2 pD = p + vec2(2. * size, 0.);
+
 		%data_loop%
 
 		vTextureCoord = aTextureCoord;
@@ -131,16 +131,16 @@ const fragment = `
 
 	void main(void){
 
-        vec2 uv = vTextureCoord;
-        
-        float width = vStrokeData.y;
-        float align = vStrokeData.z;
-        float factor = abs (uv.y - .5) * 2.;
-        float gap = max(.075, width * 0.1) ;
-        
-        vec4 stroke = vStrokeColor;
-        stroke *= 1. - smoothstep(width - gap, width  + gap, factor);
-        
+		vec2 uv = vTextureCoord;
+
+		float width = vStrokeData.y;
+		float align = vStrokeData.z;
+		float factor = abs (uv.y - .5) * 2.;
+		float gap = max(.075, width * 0.1) ;
+
+		vec4 stroke = vStrokeColor;
+		stroke *= 1. - smoothstep(width - gap, width  + gap, factor);
+
 		gl_FragColor = vColor * mix(vFillColor, stroke, vStrokeData.r);
 	}
 `;
@@ -250,7 +250,7 @@ export class PalettedGraphicsRenderer extends pixi.AbstractBatchRenderer {
 
 		if (!settings.CAN_UPLOAD_SAME_BUFFER) {
 			/* Usually on iOS devices, where the browser doesn't
-            like uploads to the same buffer in a single frame. */
+			like uploads to the same buffer in a single frame. */
 			if (this._packedGeometryPoolSize <= this._flushId) {
 				this._packedGeometryPoolSize++;
 				packedGeometries[this._flushId] = new this.geometryClass();

@@ -6,23 +6,23 @@ export class FilledGeometry extends pixi.GraphicsGeometry {
 		this._use32 = use32;
 	}
 
-    addUvs(verts, uvs, texture, start, size, matrix)
-    {        
-        let index = 0;
+	addUvs(verts, uvs, texture, start, size, matrix)
+	{
+		let index = 0;
 		
-        while (index < size)
-        {
-            let y = (start + index) % 2;
-            let x = (start + index) / (start + size);
-            uvs.push(x, y);
+		while (index < size)
+		{
+			let y = (start + index) % 2;
+			let x = (start + index) / (start + size);
+			uvs.push(x, y);
 
-            index ++;
-        }
-    }
+			index ++;
+		}
+	}
 
-    isBatchable() {
-        return true;
-    }
+	isBatchable() {
+		return true;
+	}
 
 	buildDrawCalls() {
 		super.buildDrawCalls();
